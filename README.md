@@ -4,7 +4,7 @@
 This is a simple plugin updater for WordPress plugins. It allows you to check for updates from the WPLatest.co API and display a notice in the WordPress admin area when an update is available.
 
 > [!IMPORTANT]
-> WPLatest.co is in beta, and the API is subject to change. This plugin updater is designed to work with plugins hosted on WPLatest.co. It will not work with plugins hosted on the WordPress.org plugin repository or other your own custom update server. If you need to update plugins from other sources, you should use the [YahnisElsts/plugin-update-checker](
+> WPLatest.co is in beta, and the API is subject to change. This plugin updater is designed to work with plugins hosted on WPLatest.co. It will not work with plugins hosted on the WordPress.org plugin repository or other your own custom update server. If you need to update plugins from other sources, you should use the [YahnisElsts/plugin-update-checker](https://github.com/YahnisElsts/plugin-update-checker)
 
 ## Minimum requirements
 
