@@ -77,7 +77,7 @@ class ExamplePlugin {
 		new Updater(
 			__FILE__,
 			'https://wplatest.co/api/v1/plugin/update', // The endpoint URL to check for updates. This is the URL of the WPLatest.co API.
-			'plugin_o4d45qkh5dmdokqzdr0yzbsd', // Your plugin's ID (get this from the WPLatest.co dashboard)
+			'plugin_xxxx', // Your plugin's ID (get this from the WPLatest.co dashboard)
 			null, // Optional. Defaults to plugin's version.
 		);
 	}
