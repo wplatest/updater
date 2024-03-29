@@ -1,0 +1,9 @@
+# Ignore vendor directory
+/vendor/
+
+# Ignore composer.lock file
+composer.lock
+
+# Ignore any generated files or directories
+/build/
+/dist/
