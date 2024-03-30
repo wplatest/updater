@@ -7,9 +7,16 @@ namespace WpLatest\Updater;
 use InvalidArgumentException;
 use stdClass;
 
-
 /**
- * Class Updater
+ * A class that makes it easy to automatically update WordPress plugins from a remote server.
+ * This class is designed to work with the WPLatest.co API, however, it can be modified to work with any API.
+ * As the API will be called with the plugin slug and unique ID, the API should return the plugin information
+ * in the format as shown below in the `prepare_update_object` method.
+ *
+ * @author Chris Jayden
+ * @link   https://wplatest.co
+ * @license GPL-2.0-or-later
+ * @package WpLatest\Updater
  */
 class PluginUpdater {
 	/**
@@ -27,43 +34,56 @@ class PluginUpdater {
 	protected string $plugin_slug;
 
 	/**
-	 * The URL to the API endpoint.
+	 * Options to modify the behavior of the updater.
 	 *
-	 * @var string
+	 * @property array $options {
+	 *     An array of options for the updater.
+	 *
+	 *     @type file   $file The path to the plugin file.
+	 *     @type string $id   The unique ID for the plugin. If you're using WPLatest.co, you can find this ID in the dashboard.
+	 *     @type string $hostname The hostname of the site. IMPORTANT: this must match the `Update URI` in the plugin header.
+	 *     @type string $api_url The URL to the API endpoint. It sents along the plugin slug and your unique ID.
+	 *     @type bool $telemetry Whether to send anonymous data to the API. Default is true.
+	 * }
 	 */
-	protected string $api_url;
+	protected array $options;
 
 	/**
-	 * The plugin ID on WPLatest.
+	 * The default options for the updater.
 	 *
-	 * @var string
+	 * @var array
 	 */
-	protected string $wplatest_plugin_id;
+	protected array $default_options = array(
+		'hostname' => 'wplatest.co',
+		'api_url'  => 'https://wplatest.co/api/v1/plugin/update',
+		'telemetry' => true,
+	);
+
+	/**
+	 * The required options for the updater.
+	 *
+	 * @var array
+	 */
+	protected array $required_options = array( 'file', 'id', 'api_url', 'hostname' );
 
 	/**
 	 * Updater constructor.
 	 *
-	 * @param string      $file              The main plugin file.
-	 * @param string      $api_url           The URL to the API endpoint.
-	 * @param string      $wplatest_plugin_id The plugin ID on WPLatest.
-	 * @param string|null $version           Optional. The version of the plugin.
-	 * @param bool|null   $use_cache         Optional. Whether to use the cache. Default is true.
+	 * @param array $options - See the `$options` property for a list of available options.
 	 *
-	 * @throws InvalidArgumentException If the file or API URL is empty.
+	 * @throws InvalidArgumentException If any of the required options are missing.
 	 */
-	public function __construct(
-		string $file,
-		string $api_url,
-		string $wplatest_plugin_id,
-	) {
-		if ( empty( $file ) || empty( $api_url ) ) {
-			throw new InvalidArgumentException( 'File and API URL cannot be empty.' );
+	public function __construct( array $options ) {
+		$this->options = wp_parse_args( $options, $this->default_options );
+
+		foreach ( $this->required_options as $option ) {
+			if ( empty( $this->options[ $option ] ) ) {
+				throw new InvalidArgumentException( "The {$option} option is required." );
+			}
 		}
 
-		$this->plugin_base        = plugin_basename( $file );
-		$this->plugin_slug        = dirname( $this->plugin_base );
-		$this->api_url            = trim( $api_url );
-		$this->wplatest_plugin_id = trim( $wplatest_plugin_id );
+		$this->plugin_base = plugin_basename( $this->options['file'] );
+		$this->plugin_slug = dirname( $this->plugin_base );
 
 		$this->init();
 	}
@@ -73,7 +93,7 @@ class PluginUpdater {
 	 */
 	private function init() {
 		add_filter( 'plugins_api', array( $this, 'info' ), 20, 3 );
-		add_filter( 'update_plugins_wplatest.co', array( $this, 'check_update' ), 10, 4 );
+		add_filter( "update_plugins_{$this->options['hostname']}", array( $this, 'check_update' ), 10, 4 );
 	}
 
 	/**
@@ -167,20 +187,20 @@ class PluginUpdater {
 	private function get_request_url(): string {
 		return add_query_arg(
 			array(
-				'id'        => rawurlencode( $this->wplatest_plugin_id ),
+				'id'        => rawurlencode( $this->options['id'] ),
 				'slug'      => rawurlencode( $this->plugin_slug ),
 				'referrer'  => rawurlencode( wp_guess_url() ),
-				'telemetry' => rawurlencode( wp_json_encode( $this->get_wp_anonymous_telemetry() ) ),
+				'telemetry' => rawurlencode( wp_json_encode( $this->get_telemetry_info() ) ),
 				'meta'      => rawurlencode( wp_json_encode( array( 'foo' => 'bar' ) ) ),
 			),
-			$this->api_url
+			$this->options['api_url']
 		);
 	}
 
 	/**
 	 * Retrieves the system information (anonymous data)
 	 */
-	private function get_wp_anonymous_telemetry() {
+	private function get_telemetry_info() {
 		$system_info = array(
 			'wp_version'          => get_bloginfo( 'version' ),
 			'php_version'         => phpversion(),
@@ -189,7 +209,7 @@ class PluginUpdater {
 			'wp_lang'             => get_locale(),
 		);
 
-		return $system_info;
+		return $this->options['telemetry'] ? $system_info : array();
 	}
 
 	/**
