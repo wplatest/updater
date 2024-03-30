@@ -7,9 +7,6 @@ namespace WpLatest\Updater;
 use InvalidArgumentException;
 use stdClass;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
 
 /**
  * Class Updater
@@ -37,32 +34,11 @@ class PluginUpdater {
 	protected string $api_url;
 
 	/**
-	 * The cache key for the plugin.
-	 *
-	 * @var string
-	 */
-	protected string $cache_key;
-
-	/**
-	 * The version of the plugin.
-	 *
-	 * @var string
-	 */
-	protected string $version;
-
-	/**
 	 * The plugin ID on WPLatest.
 	 *
 	 * @var string
 	 */
 	protected string $wplatest_plugin_id;
-
-	/**
-	 * Whether to use the cache.
-	 *
-	 * @var bool
-	 */
-	protected bool $use_cache;
 
 	/**
 	 * Updater constructor.
@@ -79,8 +55,6 @@ class PluginUpdater {
 		string $file,
 		string $api_url,
 		string $wplatest_plugin_id,
-		?string $version = null,
-		?bool $use_cache = false
 	) {
 		if ( empty( $file ) || empty( $api_url ) ) {
 			throw new InvalidArgumentException( 'File and API URL cannot be empty.' );
@@ -90,41 +64,8 @@ class PluginUpdater {
 		$this->plugin_slug        = dirname( $this->plugin_base );
 		$this->api_url            = trim( $api_url );
 		$this->wplatest_plugin_id = trim( $wplatest_plugin_id );
-		$this->version            = $version ?? $this->get_plugin_version( $file );
-		$this->cache_key          = $this->create_cache_key( $this->plugin_slug );
-		$this->use_cache          = $use_cache;
 
 		$this->init();
-	}
-
-	/**
-	 * Retrieves the version of the plugin from the plugin file.
-	 */
-	public function get_plugin_version( string $plugin_file ): ?string {
-
-		// Check if the get_plugin_data function doesn't exist and include the plugin.php file if necessary.
-		if ( ! function_exists( 'get_plugin_data' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		}
-
-		// Get the plugin data from the specified file.
-		$plugin_data = get_plugin_data( $plugin_file );
-
-		// Check if the version information exists in the plugin data.
-		if ( ! empty( $plugin_data ) && isset( $plugin_data['Version'] ) ) {
-			return trim( $plugin_data['Version'] );
-		}
-
-		return null;
-	}
-
-	/**
-	 * Converts a string to a slug.
-	 *
-	 * @param string $name The string to convert to a slug.
-	 */
-	public function create_cache_key( string $name ): string {
-		return sanitize_title( $name . '-wplatest' );
 	}
 
 	/**
@@ -132,8 +73,48 @@ class PluginUpdater {
 	 */
 	private function init() {
 		add_filter( 'plugins_api', array( $this, 'info' ), 20, 3 );
-		add_filter( 'site_transient_update_plugins', array( $this, 'update' ) );
-		add_action( 'upgrader_process_complete', array( $this, 'purge' ), 10, 2 );
+		add_filter( 'update_plugins_wplatest.co', array( $this, 'check_update' ), 10, 4 );
+	}
+
+	/**
+	 * Check for updates to this plugin
+	 *
+	 * @param array  $update   Array of update data.
+	 * @param array  $plugin_data Array of plugin data.
+	 * @param string $plugin_file Path to plugin file.
+	 * @param string $locales    Locale code.
+	 *
+	 * @return array|bool Array of update data or false if no update available.
+	 */
+	public function check_update( $update, array $plugin_data, string $plugin_file, $locales ) {
+		if ( $this->plugin_base !== $plugin_file ) {
+			return $update;
+		}
+
+		// Already completed the update.
+		if ( ! empty( $update ) ) {
+			return $update;
+		}
+
+		$remote = $this->request();
+		if ( ! $remote || ! isset( $remote->name, $remote->slug ) ) {
+			return $update;
+		}
+
+		$new_plugin_data    = $this->prepare_update_object( $remote );
+		$new_version_number = $new_plugin_data->new_version;
+		$has_update         = version_compare( $plugin_data['Version'], $new_version_number, '<' );
+
+		if ( ! $has_update ) {
+			return false;
+		}
+
+		return array(
+			'slug'    => $new_plugin_data->slug,
+			'version' => $new_version_number,
+			'url'     => $new_plugin_data->author_profile,
+			'package' => $new_plugin_data->package,
+		);
 	}
 
 	/**
@@ -159,56 +140,9 @@ class PluginUpdater {
 	}
 
 	/**
-	 * Checks for plugin updates.
-	 */
-	public function update( $transient ) {
-		if ( empty( $transient->checked ) ) {
-			return $transient;
-		}
-
-		$remote = $this->request();
-
-		if ( $remote && ! empty( $remote->version ) && version_compare( $this->version, $remote->version, '<' ) ) {
-			$transient->response[ $this->plugin_base ] = $this->prepare_update_object( $remote );
-		} else {
-			$transient->no_update[ $this->plugin_base ] = $this->prepare_update_object( $remote, false );
-		}
-
-		return $transient;
-	}
-
-	/**
-	 * Purges the cache when a plugin is updated.
-	 */
-	public function purge( $upgrader, $options ) {
-		if ( $this->use_cache && 'update' === $options['action'] && 'plugin' === $options['type'] && in_array( $this->plugin_base, $options['plugins'], true ) ) {
-			delete_transient( $this->cache_key );
-		}
-	}
-
-	/**
 	 * Retrieves the plugin information from the API.
 	 */
 	protected function request() {
-		$remote = get_transient( $this->cache_key );
-		if ( false !== $remote && $this->use_cache ) {
-			return json_decode( $remote ) ?? false;
-		}
-
-		$remote = $this->get_remote_update_info();
-		if ( false === $remote ) {
-			return false;
-		}
-
-		set_transient( $this->cache_key, wp_json_encode( $remote ), DAY_IN_SECONDS );
-
-		return $remote;
-	}
-
-	/**
-	 * Fetches the update information from the remote server.
-	 */
-	private function get_remote_update_info() {
 		$response = wp_remote_get( $this->get_request_url() );
 
 		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
@@ -218,7 +152,13 @@ class PluginUpdater {
 			return false;
 		}
 
-		return json_decode( wp_remote_retrieve_body( $response ) );
+		$remote = json_decode( wp_remote_retrieve_body( $response ) );
+
+		if ( false === $remote ) {
+			return false;
+		}
+
+		return $remote;
 	}
 
 	/**
@@ -229,7 +169,6 @@ class PluginUpdater {
 			array(
 				'id'        => rawurlencode( $this->wplatest_plugin_id ),
 				'slug'      => rawurlencode( $this->plugin_slug ),
-				'version'   => rawurlencode( $this->version ),
 				'referrer'  => rawurlencode( wp_guess_url() ),
 				'telemetry' => rawurlencode( wp_json_encode( $this->get_wp_anonymous_telemetry() ) ),
 				'meta'      => rawurlencode( wp_json_encode( array( 'foo' => 'bar' ) ) ),
