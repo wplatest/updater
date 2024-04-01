@@ -3,7 +3,7 @@
     "description": "A simple and lightweight package to update your WordPress plugins and themes from a private repository.",
     "homepage": "https://github.com/wplatest/updater/",
     "type": "library",
-    "version": "1.2.1",
+    "version": "1.2.3",
     "license": "GPL-3.0-or-later",
     "authors": [
         {
