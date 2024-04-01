@@ -54,8 +54,8 @@ class PluginUpdater {
 	 * @var array
 	 */
 	protected array $default_options = array(
-		'hostname' => 'wplatest.co',
-		'api_url'  => 'https://wplatest.co/api/v1/plugin/update',
+		'hostname'  => 'wplatest.co',
+		'api_url'   => 'https://wplatest.co/api/v1/plugin/update',
 		'telemetry' => true,
 	);
 
@@ -155,6 +155,7 @@ class PluginUpdater {
 		// Convert the sections and banners to arrays instead of objects.
 		$result->sections = (array) $result->sections;
 		$result->banners  = (array) $result->banners;
+		$result->slug     = $this->plugin_slug;
 
 		return $result;
 	}
