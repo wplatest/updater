@@ -117,7 +117,7 @@ class PluginUpdater {
 		}
 
 		$remote = $this->request();
-		if ( ! $remote || ! isset( $remote->name, $remote->slug ) ) {
+		if ( ! $remote || ! isset( $remote->name ) ) {
 			return $update;
 		}
 
@@ -130,7 +130,7 @@ class PluginUpdater {
 		}
 
 		return array(
-			'slug'    => $new_plugin_data->slug,
+			'slug'    => $this->plugin_slug,
 			'version' => $new_version_number,
 			'url'     => $new_plugin_data->author_profile,
 			'package' => $new_plugin_data->package,
@@ -146,7 +146,7 @@ class PluginUpdater {
 		}
 
 		$remote = $this->request();
-		if ( ! $remote || ! isset( $remote->name, $remote->slug ) ) {
+		if ( ! $remote || ! isset( $remote->name ) ) {
 			return $result;
 		}
 
@@ -218,7 +218,6 @@ class PluginUpdater {
 	private function prepare_update_object( $remote, $has_update = true ): stdClass {
 		$update_obj                 = new stdClass();
 		$update_obj->name           = $remote->name;
-		$update_obj->slug           = $remote->slug;
 		$update_obj->version        = $remote->version;
 		$update_obj->tested         = $remote->tested;
 		$update_obj->requires       = $remote->requires;

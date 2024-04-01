@@ -4,12 +4,14 @@
 This is a simple plugin updater for WordPress plugins. It allows you to check for updates from the WPLatest.co API and display a notice in the WordPress admin area when an update is available.
 
 > [!IMPORTANT]
-> WPLatest.co is in beta, and the API is subject to change. This plugin updater is designed to work with plugins hosted on WPLatest.co. It will not work with plugins hosted on the WordPress.org plugin repository or other your own custom update server. If you need to update plugins from other sources, you should use the [YahnisElsts/plugin-update-checker](https://github.com/YahnisElsts/plugin-update-checker)
+> This plugin updater is designed to work with plugins hosted on WPLatest.co. However you can modify it to work with any other API.
 
 ## Minimum requirements
 
 - PHP: 8.0 or later
 - WordPress: 6.0 or later
+- Access to your plugin's source code.
+- Optional: Composer for managing PHP dependencies
 
 ## Installation
 
@@ -31,14 +33,7 @@ require_once 'path/to/updater.php';
 
 ## Usage
 
-To use the updater, you need to create an instance of the `PluginUpdater` class. The constructor of the class accepts four parameters:
-
-1. The path to the main plugin file.
-2. The endpoint URL to check for updates. This is the URL of the WPLatest.co API.
-3. Your plugin's ID (get this from the WPLatest.co dashboard).
-4. The current version of the plugin. This is optional and defaults to the plugin's version.
-
-Your plugin slug is automatically detected from the plugin file path (parameter 1). The plugin slug is used to check for updates. Make sure it matches the slug you used when creating the plugin on WPLatest.co.
+Instantiate the `PluginUpdater` class within your plugin, providing it with the necessary configuration options. Here's a basic example you can adjust according to your needs:
 
 ```php
 <?php
@@ -56,7 +51,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Include the Composer autoloader in your plugin.
 require_once 'vendor/autoload.php';
 
-use WPLatest\Updater\PluginUpdater;
+use WpLatest\Updater\PluginUpdater;
 
 /**
  * Include the updater class.
@@ -74,14 +69,20 @@ class ExamplePlugin {
 	 * Initialize the updater.
 	 */
 	public function initialise() {
-		new Updater(
-			__FILE__,
-			'https://wplatest.co/api/v1/plugin/update', // The endpoint URL to check for updates. This is the URL of the WPLatest.co API.
-			'plugin_xxxx', // Your plugin's ID (get this from the WPLatest.co dashboard)
-			null, // Optional. Defaults to plugin's version.
+		$options = array(
+			'file'      => __FILE__,
+			'id'        => 'your-plugin-id-from-wplatest-co',
+			// Optional configuration, you don't need to set these if you're using the WPLatest.co API.
+			'api_url'   => 'https://wplatest.co/api/v1/plugin/update',
+			'hostname'  => 'wplatest.co',
+			'telemetry' => true,
 		);
+
+    	new PluginUpdater( $options );
 	}
 }
 
 $wp_latest_test_plugin = new ExamplePlugin();
 ```
+
+Replace `'your-plugin-id-from-wplatest-co'` with the actual ID provided to you by WPLatest.co for your plugin.
