@@ -134,6 +134,7 @@ class PluginUpdater {
 			'version' => $new_version_number,
 			'url'     => $new_plugin_data->author_profile,
 			'package' => $new_plugin_data->package,
+			'icons'   => $new_plugin_data->icons,
 		);
 	}
 
@@ -155,7 +156,9 @@ class PluginUpdater {
 		// Convert the sections and banners to arrays instead of objects.
 		$result->sections = (array) $result->sections;
 		$result->banners  = (array) $result->banners;
-		$result->slug     = $this->plugin_slug;
+		$result->icons    = (array) $result->icons;
+
+		$result->slug = $this->plugin_slug;
 
 		return $result;
 	}
@@ -239,6 +242,12 @@ class PluginUpdater {
 			$update_obj->banners = (array) $remote->banners;
 		} else {
 			$update_obj->banners = array();
+		}
+
+		if ( isset( $remote->icons ) ) {
+			$update_obj->icons = (array) $remote->icons;
+		} else {
+			$update_obj->icons = array();
 		}
 
 		if ( $has_update ) {
