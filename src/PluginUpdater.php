@@ -43,6 +43,7 @@ class PluginUpdater {
 	 *     @type string $id   The unique ID for the plugin. If you're using WPLatest.co, you can find this ID in the dashboard.
 	 *     @type string $hostname The hostname of the site. IMPORTANT: this must match the `Update URI` in the plugin header.
 	 *     @type string $api_url The URL to the API endpoint. It sents along the plugin slug and your unique ID.
+	 *     @type string $secret The secret key for the API. This is used to verify the request.
 	 *     @type bool $telemetry Whether to send anonymous data to the API. Default is true.
 	 * }
 	 */
@@ -167,6 +168,14 @@ class PluginUpdater {
 	 * Retrieves the plugin information from the API.
 	 */
 	protected function request() {
+		$headers = array(
+			'Accept' => 'application/json',
+		);
+
+		if ( ! empty( $this->options['secret'] ) ) {
+			$headers['Authorization'] = 'Bearer ' . $this->options['secret'];
+		}
+
 		$response = wp_remote_get( $this->get_request_url() );
 
 		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
