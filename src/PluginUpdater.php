@@ -56,7 +56,7 @@ class PluginUpdater {
 	 */
 	protected array $default_options = array(
 		'hostname'  => 'wplatest.co',
-		'api_url'   => 'https://wplatest.co/api/v1/plugin/update',
+		'api_url'   => 'https://www.wplatest.co/api/v1/plugin/update',
 		'telemetry' => true,
 	);
 
@@ -65,7 +65,7 @@ class PluginUpdater {
 	 *
 	 * @var array
 	 */
-	protected array $required_options = array( 'file', 'id', 'api_url', 'hostname' );
+	protected array $required_options = array( 'file', 'id', 'api_url', 'hostname', 'secret') ;
 
 	/**
 	 * Updater constructor.
@@ -170,13 +170,10 @@ class PluginUpdater {
 	protected function request() {
 		$headers = array(
 			'Accept' => 'application/json',
+			'Authorization' => 'Bearer ' . $this->options['secret'],
 		);
 
-		if ( ! empty( $this->options['secret'] ) ) {
-			$headers['Authorization'] = 'Bearer ' . $this->options['secret'];
-		}
-
-		$response = wp_remote_get( $this->get_request_url() );
+		$response = wp_remote_get( $this->get_request_url(), array( 'headers' => $headers ) );
 
 		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
 			// phpcs:ignore
