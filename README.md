@@ -74,8 +74,9 @@ class ExamplePlugin {
 			'id'        => 'your-plugin-id-from-wplatest-co',
 			'secret'	=> 'your-plugin-secret-from-wplatest-co',
 			// Optional configuration, you don't need to set these if you're using the WPLatest.co API.
-			'api_url'   => 'https://wplatest.co/api/v1/plugin/update',
-			'hostname'  => 'wplatest.co',
+			'api_url'   => 'https://api.yoursite.com',
+			// corresponds with the "Update URI" field in your plugin's header.
+			'hostname'  => 'yoursite.com',
 			'telemetry' => true,
 		);
 

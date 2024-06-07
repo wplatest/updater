@@ -56,7 +56,7 @@ class PluginUpdater {
 	 */
 	protected array $default_options = array(
 		'hostname'  => 'wplatest.co',
-		'api_url'   => 'https://www.wplatest.co/api/v1/plugin/update',
+		'api_url'   => 'https://wplatest.co/api/v1/plugin/update',
 		'telemetry' => true,
 	);
 
