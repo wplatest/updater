@@ -65,7 +65,7 @@ class PluginUpdater {
 	 *
 	 * @var array
 	 */
-	protected array $required_options = array( 'file', 'id', 'api_url', 'hostname', 'secret') ;
+	protected array $required_options = array( 'file', 'id', 'api_url', 'hostname' );
 
 	/**
 	 * Updater constructor.
@@ -170,8 +170,11 @@ class PluginUpdater {
 	protected function request() {
 		$headers = array(
 			'Accept' => 'application/json',
-			'Authorization' => 'Bearer ' . $this->options['secret'],
 		);
+
+		if (!empty($this->options['secret'])) {
+			$headers['Authorization'] = 'Bearer ' . $this->options['secret'];
+		}
 
 		$response = wp_remote_get( $this->get_request_url(), array( 'headers' => $headers ) );
 
